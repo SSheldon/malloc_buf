@@ -5,6 +5,7 @@ extern crate libc;
 
 use std::ffi;
 use std::mem;
+use std::ptr;
 use std::slice;
 use std::str;
 use libc::{c_char, c_void};
@@ -19,12 +20,12 @@ impl<T> MallocBuffer<T> {
     /// Constructs a new `MallocBuffer` for a `malloc`'d buffer
     /// with the given length at the given pointer.
     /// Returns `None` if the given pointer is null.
-    /// When this `MallocBuffer` drops, the buffer will be `free`'d.
+    ///
+    /// When this `MallocBuffer` drops, the elements of the buffer will be
+    /// dropped and the buffer will be `free`'d.
     ///
     /// Unsafe because there must be `len` contiguous, valid instances of `T`
-    /// at `ptr`, and `T` must not be a type that implements `Drop`
-    /// (because the `MallocBuffer` makes no attempt to drop its elements,
-    /// just the buffer containing them).
+    /// at `ptr`.
     pub unsafe fn new(ptr: *mut T, len: usize) -> Option<MallocBuffer<T>> {
         if ptr.is_null() {
             None
@@ -38,6 +39,9 @@ impl<T> MallocBuffer<T> {
 impl<T> Drop for MallocBuffer<T> {
     fn drop(&mut self) {
         unsafe {
+            for item in self.as_slice().iter() {
+                ptr::read(item);
+            }
             libc::free(self.ptr as *mut c_void);
         }
     }

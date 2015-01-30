@@ -1,5 +1,4 @@
-#![feature(unsafe_destructor)]
-#![allow(unstable)]
+#![feature(core, std_misc, unsafe_destructor)]
 
 extern crate libc;
 
@@ -90,7 +89,7 @@ impl MallocString {
 
 impl Str for MallocString {
     fn as_slice(&self) -> &str {
-        let v = self.data.as_slice().slice_to(self.data.len - 1);
+        let v = &self.data.as_slice()[..self.data.len - 1];
         unsafe {
             str::from_utf8_unchecked(v)
         }

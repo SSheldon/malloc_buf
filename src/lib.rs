@@ -4,6 +4,7 @@ extern crate libc;
 
 use std::ffi;
 use std::mem;
+use std::ops::Deref;
 use std::ptr;
 use std::slice;
 use std::str;
@@ -38,7 +39,7 @@ impl<T> MallocBuffer<T> {
 impl<T> Drop for MallocBuffer<T> {
     fn drop(&mut self) {
         unsafe {
-            for item in self.as_slice().iter() {
+            for item in self.iter() {
                 ptr::read(item);
             }
             libc::free(self.ptr as *mut c_void);
@@ -46,8 +47,10 @@ impl<T> Drop for MallocBuffer<T> {
     }
 }
 
-impl<T> AsSlice<T> for MallocBuffer<T> {
-    fn as_slice(&self) -> &[T] {
+impl<T> Deref for MallocBuffer<T> {
+    type Target = [T];
+
+    fn deref(&self) -> &[T] {
         let const_ptr = self.ptr as *const T;
         unsafe {
             let s = slice::from_raw_buf(&const_ptr, self.len);
@@ -87,9 +90,11 @@ impl MallocString {
     }
 }
 
-impl Str for MallocString {
-    fn as_slice(&self) -> &str {
-        let v = &self.data.as_slice()[..self.data.len - 1];
+impl Deref for MallocString {
+    type Target = str;
+
+    fn deref(&self) -> &str {
+        let v = &self.data[..self.data.len - 1];
         unsafe {
             str::from_utf8_unchecked(v)
         }

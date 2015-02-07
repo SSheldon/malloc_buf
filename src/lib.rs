@@ -3,7 +3,6 @@
 extern crate libc;
 
 use std::ffi;
-use std::mem;
 use std::ops::Deref;
 use std::ptr;
 use std::slice;
@@ -51,10 +50,8 @@ impl<T> Deref for MallocBuffer<T> {
     type Target = [T];
 
     fn deref(&self) -> &[T] {
-        let const_ptr = self.ptr as *const T;
         unsafe {
-            let s = slice::from_raw_buf(&const_ptr, self.len);
-            mem::transmute(s)
+            slice::from_raw_parts(self.ptr as *const T, self.len)
         }
     }
 }

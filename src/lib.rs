@@ -2,7 +2,7 @@
 
 extern crate libc;
 
-use std::ffi;
+use std::ffi::CStr;
 use std::ops::Deref;
 use std::ptr;
 use std::slice;
@@ -71,8 +71,8 @@ impl MallocString {
         if ptr.is_null() {
             None
         } else {
-            let const_ptr = ptr as *const c_char;
-            let bytes = ffi::c_str_to_bytes(&const_ptr);
+            let s = CStr::from_ptr(ptr as *const c_char);
+            let bytes = s.to_bytes();
             if str::from_utf8(bytes).is_ok() {
                 let data = MallocBuffer {
                     ptr: ptr as *mut u8,

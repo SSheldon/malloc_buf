@@ -18,7 +18,7 @@ pub struct MallocBuffer<T> {
 impl<T> MallocBuffer<T> {
     /// Constructs a new `MallocBuffer` for a `malloc`'d buffer
     /// with the given length at the given pointer.
-    /// Returns `None` if the given pointer is null.
+    /// Returns `None` if the given pointer is null and the length is not 0.
     ///
     /// When this `MallocBuffer` drops, the elements of the buffer will be
     /// dropped and the buffer will be `free`'d.
@@ -26,7 +26,7 @@ impl<T> MallocBuffer<T> {
     /// Unsafe because there must be `len` contiguous, valid instances of `T`
     /// at `ptr`.
     pub unsafe fn new(ptr: *mut T, len: usize) -> Option<MallocBuffer<T>> {
-        if ptr.is_null() {
+        if len > 0 && ptr.is_null() {
             None
         } else {
             Some(MallocBuffer { ptr: ptr, len: len })
@@ -50,8 +50,14 @@ impl<T> Deref for MallocBuffer<T> {
     type Target = [T];
 
     fn deref(&self) -> &[T] {
+        let ptr = if self.len == 0 && self.ptr.is_null() {
+            // Even a 0-size slice cannot be null, so just use another pointer
+            0x1 as *const T
+        } else {
+            self.ptr as *const T
+        };
         unsafe {
-            slice::from_raw_parts(self.ptr as *const T, self.len)
+            slice::from_raw_parts(ptr, self.len)
         }
     }
 }

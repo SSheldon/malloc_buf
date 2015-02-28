@@ -103,3 +103,50 @@ impl Deref for MallocString {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::ptr;
+    use libc::{c_char, self};
+
+    use super::{MallocBuffer, MallocString};
+
+    #[test]
+    fn test_null_buf() {
+        let buf = unsafe {
+            MallocBuffer::<u32>::new(ptr::null_mut(), 0).unwrap()
+        };
+        assert!(&*buf == []);
+        assert!(Some(&*buf) == Some(&[]));
+
+        let buf = unsafe {
+            MallocBuffer::<u32>::new(ptr::null_mut(), 7)
+        };
+        assert!(buf.is_none());
+    }
+
+    #[test]
+    fn test_buf() {
+        let buf = unsafe {
+            let ptr = libc::malloc(12) as *mut u32;
+            *ptr = 1;
+            *ptr.offset(1) = 2;
+            *ptr.offset(2) = 3;
+            MallocBuffer::new(ptr, 3).unwrap()
+        };
+        assert!(&*buf == [1, 2, 3]);
+    }
+
+    #[test]
+    fn test_string() {
+        let s = unsafe {
+            let ptr = libc::malloc(4) as *mut c_char;
+            *ptr = 'h' as c_char;
+            *ptr.offset(1) = 'e' as c_char;
+            *ptr.offset(2) = 'y' as c_char;
+            *ptr.offset(3) = '\0' as c_char;
+            MallocString::new(ptr).unwrap()
+        };
+        assert!(&*s == "hey");
+    }
+}

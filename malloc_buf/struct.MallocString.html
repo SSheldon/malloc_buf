@@ -26,7 +26,7 @@
 
     <section class="sidebar">
         
-        <p class='location'><a href='index.html'>malloc_buf</a></p><div class='block struct'><h2>Structs</h2><a class='struct ' href='struct.MallocBuffer.html'>MallocBuffer</a><a class='struct current' href='struct.MallocString.html'>MallocString</a></div>
+        <p class='location'><a href='index.html'>malloc_buf</a></p><div class='block struct'><h2>Structs</h2><a class='struct ' href='struct.MallocBuffer.html' title='A type that represents a `malloc`&#39;d chunk of memory.'>MallocBuffer</a><a class='struct current' href='struct.MallocString.html' title='A type that represents a `malloc`&#39;d string.'>MallocString</a></div>
     </section>
 
     <nav class="sub">
@@ -42,9 +42,8 @@
 
     <section id='main' class="content struct">
 <h1 class='fqn'><span class='in-band'>Struct <a href='index.html'>malloc_buf</a>::<wbr><a class='struct' href=''>MallocString</a><wbr></span><span class='out-of-band'><span id='render-detail'>
-            <a id="collapse-all" href="#">[-]
-            </a>&nbsp;<a id="expand-all" href="#">[+]</a>
-        </span><a id='src-140' href='../src/malloc_buf/lib.rs.html#61-63'>[src]</a></span></h1>
+            <a id="collapse-all" href="#">[-]</a>&nbsp;<a id="expand-all" href="#">[+]</a>
+        </span><a id='src-156' href='../src/malloc_buf/lib.rs.html#66-68'>[src]</a></span></h1>
 <pre class='rust struct'>pub struct MallocString {
     // some fields omitted
 }</pre><div class='docblock'><p>A type that represents a <code>malloc</code>&#39;d string.</p>
@@ -54,7 +53,8 @@ Returns <code>None</code> if the given pointer is null or the C string isn&#39;t
 When this <code>MallocString</code> drops, the buffer will be <code>free</code>&#39;d.</p>
 
 <p>Unsafe because <code>ptr</code> must point to a valid, nul-terminated C string.</p>
-</div></div><h2 id='implementations'>Trait Implementations</h2><h3 class='impl'><a class='stability Unstable' title='Unstable: Instead of taking this bound generically, this trait will be replaced with one of slicing syntax, deref coercions, or a more generic conversion trait'></a><code>impl <a class='trait' href='http://doc.rust-lang.org/nightly/core/str/trait.Str.html' title='core::str::Str'>Str</a> for <a class='struct' href='../malloc_buf/struct.MallocString.html' title='malloc_buf::MallocString'>MallocString</a></code></h3><div class='impl-items'><h4 id='method.as_slice' class='method'><a class='stability Unstable' title='Unstable: Instead of taking this bound generically, this trait will be replaced with one of slicing syntax, deref coercions, or a more generic conversion trait'></a><code>fn <a href='#method.as_slice' class='fnname'>as_slice</a>(&amp;self) -&gt; &amp;<a href='http://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a></code></h4>
+</div></div><h2 id='implementations'>Trait Implementations</h2><h3 class='impl'><a class='stability Stable' title='Stable'></a><code>impl <a class='trait' href='http://doc.rust-lang.org/nightly/core/ops/trait.Deref.html' title='core::ops::Deref'>Deref</a> for <a class='struct' href='../malloc_buf/struct.MallocString.html' title='malloc_buf::MallocString'>MallocString</a></code></h3><div class='impl-items'><h4 id='assoc_type.Target' class='type'><a class='stability Unmarked' title='No stability level'></a><code>type Target = <a href='http://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a></code></h4>
+<h4 id='method.deref' class='method'><a class='stability Stable' title='Stable'></a><code>fn <a href='#method.deref' class='fnname'>deref</a>(&amp;self) -&gt; &amp;<a href='http://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a></code></h4>
 </div></section>
     <section id='search' class="content hidden"></section>
 

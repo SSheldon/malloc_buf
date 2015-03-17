@@ -4,7 +4,6 @@ extern crate libc;
 
 use std::ffi::CStr;
 use std::ops::Deref;
-use std::ptr;
 use std::slice;
 use std::str;
 use libc::{c_char, c_void};
@@ -15,13 +14,12 @@ pub struct MallocBuffer<T> {
     len: usize,
 }
 
-impl<T> MallocBuffer<T> {
+impl<T: Copy> MallocBuffer<T> {
     /// Constructs a new `MallocBuffer` for a `malloc`'d buffer
     /// with the given length at the given pointer.
     /// Returns `None` if the given pointer is null and the length is not 0.
     ///
-    /// When this `MallocBuffer` drops, the elements of the buffer will be
-    /// dropped and the buffer will be `free`'d.
+    /// When this `MallocBuffer` drops, the buffer will be `free`'d.
     ///
     /// Unsafe because there must be `len` contiguous, valid instances of `T`
     /// at `ptr`.
@@ -38,9 +36,6 @@ impl<T> MallocBuffer<T> {
 impl<T> Drop for MallocBuffer<T> {
     fn drop(&mut self) {
         unsafe {
-            for item in self.iter() {
-                ptr::read(item);
-            }
             libc::free(self.ptr as *mut c_void);
         }
     }

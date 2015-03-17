@@ -1,17 +1,27 @@
-#![feature(unsafe_destructor)]
-
 extern crate libc;
 
 use std::ffi::CStr;
+use std::marker::PhantomData;
 use std::ops::Deref;
 use std::slice;
 use std::str;
 use libc::{c_char, c_void};
 
+struct MallocPtr(*mut c_void);
+
+impl Drop for MallocPtr {
+    fn drop(&mut self) {
+        unsafe {
+            libc::free(self.0);
+        }
+    }
+}
+
 /// A type that represents a `malloc`'d chunk of memory.
 pub struct MallocBuffer<T> {
-    ptr: *mut T,
+    ptr: MallocPtr,
     len: usize,
+    items: PhantomData<[T]>,
 }
 
 impl<T: Copy> MallocBuffer<T> {
@@ -27,16 +37,11 @@ impl<T: Copy> MallocBuffer<T> {
         if len > 0 && ptr.is_null() {
             None
         } else {
-            Some(MallocBuffer { ptr: ptr, len: len })
-        }
-    }
-}
-
-#[unsafe_destructor]
-impl<T> Drop for MallocBuffer<T> {
-    fn drop(&mut self) {
-        unsafe {
-            libc::free(self.ptr as *mut c_void);
+            Some(MallocBuffer {
+                ptr: MallocPtr(ptr as *mut c_void),
+                len: len,
+                items: PhantomData,
+            })
         }
     }
 }
@@ -45,11 +50,11 @@ impl<T> Deref for MallocBuffer<T> {
     type Target = [T];
 
     fn deref(&self) -> &[T] {
-        let ptr = if self.len == 0 && self.ptr.is_null() {
+        let ptr = if self.len == 0 && self.ptr.0.is_null() {
             // Even a 0-size slice cannot be null, so just use another pointer
             0x1 as *const T
         } else {
-            self.ptr as *const T
+            self.ptr.0 as *const T
         };
         unsafe {
             slice::from_raw_parts(ptr, self.len)
@@ -76,9 +81,10 @@ impl MallocString {
             let bytes = s.to_bytes();
             if str::from_utf8(bytes).is_ok() {
                 let data = MallocBuffer {
-                    ptr: ptr as *mut u8,
+                    ptr: MallocPtr(ptr as *mut c_void),
                     // len + 1 to account for the nul byte
                     len: bytes.len() + 1,
+                    items: PhantomData,
                 };
                 Some(MallocString { data: data })
             } else {

@@ -1,11 +1,9 @@
 extern crate libc;
 
-use std::ffi::CStr;
 use std::marker::PhantomData;
 use std::ops::Deref;
 use std::slice;
-use std::str;
-use libc::{c_char, c_void};
+use libc::c_void;
 
 struct MallocPtr(*mut c_void);
 
@@ -62,55 +60,12 @@ impl<T> Deref for MallocBuffer<T> {
     }
 }
 
-/// A type that represents a `malloc`'d string.
-pub struct MallocString {
-    data: MallocBuffer<u8>,
-}
-
-impl MallocString {
-    /// Constructs a new `MallocString` for a `malloc`'d C string buffer.
-    /// Returns `None` if the given pointer is null or the C string isn't UTF8.
-    /// When this `MallocString` drops, the buffer will be `free`'d.
-    ///
-    /// Unsafe because `ptr` must point to a valid, nul-terminated C string.
-    pub unsafe fn new(ptr: *mut c_char) -> Option<MallocString> {
-        if ptr.is_null() {
-            None
-        } else {
-            let s = CStr::from_ptr(ptr as *const c_char);
-            let bytes = s.to_bytes();
-            if str::from_utf8(bytes).is_ok() {
-                let data = MallocBuffer {
-                    ptr: MallocPtr(ptr as *mut c_void),
-                    // len + 1 to account for the nul byte
-                    len: bytes.len() + 1,
-                    items: PhantomData,
-                };
-                Some(MallocString { data: data })
-            } else {
-                None
-            }
-        }
-    }
-}
-
-impl Deref for MallocString {
-    type Target = str;
-
-    fn deref(&self) -> &str {
-        let v = &self.data[..self.data.len - 1];
-        unsafe {
-            str::from_utf8_unchecked(v)
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use std::ptr;
-    use libc::{c_char, self};
+    use libc;
 
-    use super::{MallocBuffer, MallocString};
+    use super::MallocBuffer;
 
     #[test]
     fn test_null_buf() {
@@ -136,18 +91,5 @@ mod tests {
             MallocBuffer::new(ptr, 3).unwrap()
         };
         assert!(&*buf == [1, 2, 3]);
-    }
-
-    #[test]
-    fn test_string() {
-        let s = unsafe {
-            let ptr = libc::malloc(4) as *mut c_char;
-            *ptr = 'h' as c_char;
-            *ptr.offset(1) = 'e' as c_char;
-            *ptr.offset(2) = 'y' as c_char;
-            *ptr.offset(3) = '\0' as c_char;
-            MallocString::new(ptr).unwrap()
-        };
-        assert!(&*s == "hey");
     }
 }

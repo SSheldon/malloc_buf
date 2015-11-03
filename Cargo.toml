@@ -1,6 +1,6 @@
 [package]
 name = "malloc_buf"
-version = "0.0.5"
+version = "0.1.0"
 authors = ["Steven Sheldon"]
 
 description = "Structs for handling malloc'd memory passed to Rust."
@@ -9,4 +9,4 @@ documentation = "http://ssheldon.github.io/malloc_buf/malloc_buf/"
 license = "MIT"
 
 [dependencies]
-libc = "0.1"
+libc = "0.2"

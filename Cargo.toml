@@ -8,5 +8,7 @@ repository = "https://github.com/SSheldon/malloc_buf"
 documentation = "http://ssheldon.github.io/malloc_buf/malloc_buf/"
 license = "MIT"
 
+exclude = [".gitignore"]
+
 [dependencies]
 libc = ">= 0.1, < 0.3"

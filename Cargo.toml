@@ -9,4 +9,4 @@ documentation = "http://ssheldon.github.io/malloc_buf/malloc_buf/"
 license = "MIT"
 
 [dependencies]
-libc = "0.1"
+libc = ">= 0.1, < 0.3"

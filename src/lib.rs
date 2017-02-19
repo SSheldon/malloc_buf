@@ -4,6 +4,7 @@ extern crate libc;
 #[cfg(test)]
 extern crate std;
 
+use core::fmt;
 use core::ops::Deref;
 use core::ptr;
 use core::slice;
@@ -71,6 +72,24 @@ impl<T: ?Sized> Drop for Malloc<T> {
                 libc::free(self.ptr as *mut c_void);
             }
         }
+    }
+}
+
+impl<T: fmt::Debug + ?Sized> fmt::Debug for Malloc<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fmt::Debug::fmt(&**self, f)
+    }
+}
+
+impl<T: fmt::Display + ?Sized> fmt::Display for Malloc<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fmt::Display::fmt(&**self, f)
+    }
+}
+
+impl<T: ?Sized> AsRef<T> for Malloc<T> {
+    fn as_ref(&self) -> &T {
+        &**self
     }
 }
 

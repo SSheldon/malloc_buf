@@ -6,7 +6,8 @@ extern crate std;
 
 use core::ops::Deref;
 use core::slice;
-use libc::c_void;
+use core::str::{Utf8Error, self};
+use libc::{c_char, c_void};
 
 const DUMMY_PTR: *mut c_void = 0x1 as *mut c_void;
 
@@ -36,6 +37,17 @@ impl<T: Copy> Malloc<[T]> {
     }
 }
 
+impl Malloc<str> {
+    pub unsafe fn from_c_str(ptr: *mut c_char)
+            -> Result<Malloc<str>, Utf8Error> {
+        let len = libc::strlen(ptr);
+        let slice = slice::from_raw_parts(ptr as *mut u8, len);
+        str::from_utf8(slice).map(|s| {
+            Malloc { ptr: s as *const str as *mut str }
+        })
+    }
+}
+
 impl<T: ?Sized> Deref for Malloc<T> {
     type Target = T;
 
@@ -58,7 +70,7 @@ impl<T: ?Sized> Drop for Malloc<T> {
 #[cfg(test)]
 mod tests {
     use std::ptr;
-    use libc;
+    use libc::{c_char, self};
 
     use super::Malloc;
 
@@ -86,5 +98,18 @@ mod tests {
             Malloc::from_array(ptr, 3).unwrap()
         };
         assert!(&*buf == [1, 2, 3]);
+    }
+
+    #[test]
+    fn test_string() {
+        let s = unsafe {
+            let ptr = libc::malloc(4) as *mut c_char;
+            *ptr = 'h' as c_char;
+            *ptr.offset(1) = 'e' as c_char;
+            *ptr.offset(2) = 'y' as c_char;
+            *ptr.offset(3) = '\0' as c_char;
+            Malloc::from_c_str(ptr).unwrap()
+        };
+        assert!(&*s == "hey");
     }
 }

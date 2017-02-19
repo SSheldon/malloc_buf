@@ -5,6 +5,7 @@ extern crate libc;
 extern crate std;
 
 use core::ops::Deref;
+use core::ptr;
 use core::slice;
 use core::str::{Utf8Error, self};
 use libc::{c_char, c_void};
@@ -16,7 +17,7 @@ pub struct Malloc<T: ?Sized> {
     ptr: *mut T,
 }
 
-impl<T: Copy> Malloc<[T]> {
+impl<T> Malloc<[T]> {
     /// Constructs a new `Malloc` for a `malloc`'d buffer
     /// with the given length at the given pointer.
     /// Returns `None` if the given pointer is null and the length is not 0.
@@ -58,10 +59,10 @@ impl<T: ?Sized> Deref for Malloc<T> {
 
 impl<T: ?Sized> Drop for Malloc<T> {
     fn drop(&mut self) {
-        let ptr = self.ptr as *mut c_void;
-        if ptr != DUMMY_PTR {
+        if (self.ptr as *mut c_void) != DUMMY_PTR {
             unsafe {
-                libc::free(ptr);
+                ptr::drop_in_place(self.ptr);
+                libc::free(self.ptr as *mut c_void);
             }
         }
     }
@@ -69,6 +70,7 @@ impl<T: ?Sized> Drop for Malloc<T> {
 
 #[cfg(test)]
 mod tests {
+    use std::mem;
     use std::ptr;
     use libc::{c_char, self};
 
@@ -111,5 +113,24 @@ mod tests {
             Malloc::from_c_str(ptr).unwrap()
         };
         assert!(&*s == "hey");
+    }
+
+    #[test]
+    fn test_drop() {
+        use std::rc::Rc;
+
+        let num: Rc<i32> = Rc::new(4);
+        assert_eq!(Rc::strong_count(&num), 1);
+
+        let buf = unsafe {
+            let ptr = libc::malloc(mem::size_of::<Rc<i32>>() * 2) as *mut Rc<i32>;
+            ptr::write(ptr, num.clone());
+            ptr::write(ptr.offset(1), num.clone());
+            Malloc::from_array(ptr, 2).unwrap()
+        };
+        assert_eq!(Rc::strong_count(&num), 3);
+
+        drop(buf);
+        assert_eq!(Rc::strong_count(&num), 1);
     }
 }

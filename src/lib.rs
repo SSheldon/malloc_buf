@@ -17,6 +17,12 @@ pub struct Malloc<T: ?Sized> {
     ptr: *mut T,
 }
 
+impl<T> Malloc<T> {
+    pub unsafe fn new(ptr: *mut T) -> Malloc<T> {
+        Malloc { ptr: ptr }
+    }
+}
+
 impl<T> Malloc<[T]> {
     /**
     Constructs a new `Malloc` for a `malloc`'d buffer with the given length
@@ -76,6 +82,14 @@ mod tests {
 
     use super::Malloc;
 
+    fn alloc<T>(value: T) -> *mut T {
+        unsafe {
+            let ptr = libc::malloc(mem::size_of::<T>()) as *mut T;
+            ptr::write(ptr, value);
+            ptr
+        }
+    }
+
     #[test]
     fn test_null_buf() {
         let buf = unsafe {
@@ -87,27 +101,27 @@ mod tests {
 
     #[test]
     fn test_buf() {
-        let buf = unsafe {
-            let ptr = libc::malloc(12) as *mut u32;
-            *ptr = 1;
-            *ptr.offset(1) = 2;
-            *ptr.offset(2) = 3;
-            Malloc::from_array(ptr, 3)
-        };
+        let ptr = alloc([1, 2, 3]);
+        let buf = unsafe { Malloc::from_array(ptr as *mut i32, 3) };
         assert!(&*buf == [1, 2, 3]);
     }
 
     #[test]
     fn test_string() {
-        let s = unsafe {
-            let ptr = libc::malloc(4) as *mut c_char;
-            *ptr = 'h' as c_char;
-            *ptr.offset(1) = 'e' as c_char;
-            *ptr.offset(2) = 'y' as c_char;
-            *ptr.offset(3) = '\0' as c_char;
-            Malloc::from_c_str(ptr).unwrap()
-        };
+        let ptr = alloc(['h' as c_char, 'e' as c_char, 'y' as c_char, '\0' as c_char]);
+        let s = unsafe { Malloc::from_c_str(ptr as *mut c_char).unwrap() };
         assert!(&*s == "hey");
+    }
+
+    #[test]
+    fn test_single() {
+        use std::string::ToString;
+
+        let m = unsafe { Malloc::new(alloc(4)) };
+        assert!(&*m == &4);
+
+        let m = unsafe { Malloc::new(alloc("hello".to_string())) };
+        assert!(&**m == "hello");
     }
 
     #[test]
@@ -117,12 +131,8 @@ mod tests {
         let num: Rc<i32> = Rc::new(4);
         assert_eq!(Rc::strong_count(&num), 1);
 
-        let buf = unsafe {
-            let ptr = libc::malloc(mem::size_of::<Rc<i32>>() * 2) as *mut Rc<i32>;
-            ptr::write(ptr, num.clone());
-            ptr::write(ptr.offset(1), num.clone());
-            Malloc::from_array(ptr, 2)
-        };
+        let ptr = alloc([num.clone(), num.clone()]);
+        let buf = unsafe { Malloc::from_array(ptr as *mut Rc<i32>, 2) };
         assert_eq!(Rc::strong_count(&num), 3);
 
         drop(buf);

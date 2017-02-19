@@ -1,7 +1,11 @@
-extern crate libc;
+#![no_std]
 
-use std::ops::Deref;
-use std::slice;
+extern crate libc;
+#[cfg(test)]
+extern crate std;
+
+use core::ops::Deref;
+use core::slice;
 use libc::c_void;
 
 const DUMMY_PTR: *mut c_void = 0x1 as *mut c_void;

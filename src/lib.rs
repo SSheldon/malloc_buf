@@ -18,23 +18,23 @@ pub struct Malloc<T: ?Sized> {
 }
 
 impl<T> Malloc<[T]> {
-    /// Constructs a new `Malloc` for a `malloc`'d buffer
-    /// with the given length at the given pointer.
-    /// Returns `None` if the given pointer is null and the length is not 0.
-    ///
-    /// When this `Malloc` drops, the buffer will be `free`'d.
-    ///
-    /// Unsafe because there must be `len` contiguous, valid instances of `T`
-    /// at `ptr`.
-    pub unsafe fn from_array(ptr: *mut T, len: usize) -> Option<Malloc<[T]>> {
-        let ptr = match (ptr.is_null(), len) {
-            // Even a 0-size slice cannot be null, so just use another pointer
-            (true, 0) => DUMMY_PTR as *mut T,
-            (true, _) => return None,
-            (false, _) => ptr,
-        };
+    /**
+    Constructs a new `Malloc` for a `malloc`'d buffer with the given length
+    at the given pointer.
+    When this `Malloc` drops, the buffer will be `free`'d.
+
+    Unsafe because there must be `len` contiguous, valid instances of `T`
+    at `ptr`.
+
+    The given pointer must not be null unless the length is 0; this function
+    will specially handle null, 0-length buffers safely.
+    */
+    pub unsafe fn from_array(ptr: *mut T, len: usize) -> Malloc<[T]> {
+        // Even a 0-size slice cannot be null, so just use another pointer
+        let ptr = if ptr.is_null() && len == 0 { DUMMY_PTR as *mut T }
+                  else { ptr };
         let slice = slice::from_raw_parts(ptr, len);
-        Some(Malloc { ptr: slice as *const [T] as *mut [T] })
+        Malloc { ptr: slice as *const [T] as *mut [T] }
     }
 }
 
@@ -79,15 +79,10 @@ mod tests {
     #[test]
     fn test_null_buf() {
         let buf = unsafe {
-            Malloc::<[u32]>::from_array(ptr::null_mut(), 0).unwrap()
+            Malloc::<[u32]>::from_array(ptr::null_mut(), 0)
         };
         assert!(&*buf == []);
         assert!(Some(&*buf) == Some(&[]));
-
-        let buf = unsafe {
-            Malloc::<[u32]>::from_array(ptr::null_mut(), 7)
-        };
-        assert!(buf.is_none());
     }
 
     #[test]
@@ -97,7 +92,7 @@ mod tests {
             *ptr = 1;
             *ptr.offset(1) = 2;
             *ptr.offset(2) = 3;
-            Malloc::from_array(ptr, 3).unwrap()
+            Malloc::from_array(ptr, 3)
         };
         assert!(&*buf == [1, 2, 3]);
     }
@@ -126,7 +121,7 @@ mod tests {
             let ptr = libc::malloc(mem::size_of::<Rc<i32>>() * 2) as *mut Rc<i32>;
             ptr::write(ptr, num.clone());
             ptr::write(ptr.offset(1), num.clone());
-            Malloc::from_array(ptr, 2).unwrap()
+            Malloc::from_array(ptr, 2)
         };
         assert_eq!(Rc::strong_count(&num), 3);
 

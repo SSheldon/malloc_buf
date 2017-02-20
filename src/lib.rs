@@ -14,11 +14,17 @@ use libc::{c_char, c_void};
 const DUMMY_PTR: *mut c_void = 0x1 as *mut c_void;
 
 /// A type that represents a `malloc`'d chunk of memory.
+/// When dropped, a `Malloc` will `free` that memory.
 pub struct Malloc<T: ?Sized> {
     ptr: *mut T,
 }
 
 impl<T> Malloc<T> {
+    /**
+    Constructs a new `Malloc` for a `malloc`'d value.
+
+    Unsafe because there must be a valid instance of `T` at `ptr`.
+    */
     pub unsafe fn new(ptr: *mut T) -> Malloc<T> {
         Malloc { ptr: ptr }
     }
@@ -28,7 +34,6 @@ impl<T> Malloc<[T]> {
     /**
     Constructs a new `Malloc` for a `malloc`'d buffer with the given length
     at the given pointer.
-    When this `Malloc` drops, the buffer will be `free`'d.
 
     Unsafe because there must be `len` contiguous, valid instances of `T`
     at `ptr`.
@@ -46,6 +51,15 @@ impl<T> Malloc<[T]> {
 }
 
 impl Malloc<str> {
+    /**
+    Constructs a new `Malloc` for a `malloc`'d nul-terminated C string
+    at the given pointer. Returns an error if the bytes are not valid UTF8.
+
+    Unsafe because `ptr` must point to valid, nul-terminated bytes.
+
+    Once created, when dereferenced the `Malloc<str>` will return the string
+    without its nul-terminator.
+    */
     pub unsafe fn from_c_str(ptr: *mut c_char)
             -> Result<Malloc<str>, Utf8Error> {
         let len = libc::strlen(ptr);

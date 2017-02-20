@@ -25,7 +25,7 @@ impl<T> Malloc<T> {
 
     Unsafe because there must be a valid instance of `T` at `ptr`.
     */
-    pub unsafe fn new(ptr: *mut T) -> Malloc<T> {
+    pub unsafe fn from_ptr(ptr: *mut T) -> Malloc<T> {
         Malloc { ptr: ptr }
     }
 }
@@ -150,10 +150,10 @@ mod tests {
     fn test_single() {
         use std::string::ToString;
 
-        let m = unsafe { Malloc::new(alloc(4)) };
+        let m = unsafe { Malloc::from_ptr(alloc(4)) };
         assert!(&*m == &4);
 
-        let m = unsafe { Malloc::new(alloc("hello".to_string())) };
+        let m = unsafe { Malloc::from_ptr(alloc("hello".to_string())) };
         assert!(&**m == "hello");
     }
 
